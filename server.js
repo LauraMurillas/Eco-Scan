@@ -159,6 +159,47 @@ app.get("/api/create", async (req, res) => {
   }
 });
 
+/**
+ * C. GET /api/tips
+ * Genera un consejo aleatorio sobre reciclaje y medio ambiente.
+ */
+app.get("/api/tips", async (req, res) => {
+  try {
+    const groqPrompt = `Genera un consejo breve y práctico sobre reciclaje, medio ambiente o cómo ayudar al planeta desde pequeñas acciones cotidianas.
+    El consejo debe ser:
+    - Corto (máximo 2-3 oraciones)
+    - Práctico y fácil de implementar
+    - Motivador y positivo
+    - Relacionado con Colombia cuando sea posible
+    
+    Responde ÚNICAMENTE con el texto del consejo, sin formato adicional ni comillas.`;
+
+    const chatCompletion = await groq.chat.completions.create({
+      messages: [{ role: "user", content: groqPrompt }],
+      model: "openai/gpt-oss-20b",
+      temperature: 0.8,
+    });
+
+    const tip = chatCompletion.choices[0]?.message?.content || "Recuerda separar tus residuos correctamente para facilitar el reciclaje.";
+    console.log("✅ Consejo generado:", tip);
+
+    res.json({ tip: tip.trim() });
+
+  } catch (error) {
+    console.error("❌ Error en /api/tips:", error);
+    // Fallback tips
+    const fallbackTips = [
+      "Lleva tu propia bolsa reutilizable al supermercado y reduce el uso de plástico.",
+      "Separa tus residuos en casa: aprovechables, orgánicos y no aprovechables.",
+      "Reutiliza frascos de vidrio para almacenar alimentos en lugar de comprar nuevos contenedores.",
+      "Apaga las luces cuando salgas de una habitación y ahorra energía.",
+      "Usa una botella reutilizable en lugar de comprar botellas de plástico desechables."
+    ];
+    const randomTip = fallbackTips[Math.floor(Math.random() * fallbackTips.length)];
+    res.json({ tip: randomTip });
+  }
+});
+
 app.listen(port, () => {
   console.log(`Servidor corriendo en http://localhost:${port}`);
   console.log(`Usando modelo: ${MODEL_NAME}`);

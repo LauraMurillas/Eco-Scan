@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './App.css';
 import QuizModal from './QuizModal';
 
@@ -11,6 +11,7 @@ function App() {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
     const [isQuizOpen, setIsQuizOpen] = useState(false);
+    const [ecoTip, setEcoTip] = useState('Cargando consejo...');
 
     const handleFileChange = (event) => {
         const file = event.target.files[0];
@@ -55,12 +56,32 @@ function App() {
         }
     };
 
+    // Fetch eco tip on component mount
+    useEffect(() => {
+        const fetchTip = async () => {
+            try {
+                const response = await fetch(`${BASE_URL}/tips`);
+                const data = await response.json();
+                setEcoTip(data.tip);
+            } catch (err) {
+                console.error('Error fetching tip:', err);
+                setEcoTip('Recuerda separar tus residuos para facilitar el reciclaje.');
+            }
+        };
+        fetchTip();
+    }, []);
+
     return (
         <div className="app-container">
             <header className="app-header">
                 <h1 className="app-title">EcoScan</h1>
                 <p className="app-subtitle">Clasificador de Basura</p>
             </header>
+
+            <div className="eco-tip-section">
+                <div className="tip-icon">💡</div>
+                <p className="tip-text">{ecoTip}</p>
+            </div>
 
             <div className="upload-section">
                 <label htmlFor="file-upload" className="file-upload-label">
