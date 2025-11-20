@@ -82,16 +82,29 @@ GROQ_API_KEY=tu_clave_de_groq
 PORT=3000
 ```
 
-### 4. Ejecutar en desarrollo
+### 4. Ejecutar la aplicación
 
-**Terminal 1 - Frontend:**
+**Opción 1: Script automático (Windows)**
 ```bash
-npm run dev
+# Ejecuta frontend y backend simultáneamente
+start.bat
 ```
 
-**Terminal 2 - Backend:**
+**Opción 2: Comando npm (Cualquier plataforma)**
+```bash
+npm start
+```
+
+**Opción 3: Manual (dos terminales)**
+
+**Terminal 1 - Backend:**
 ```bash
 node server.js
+```
+
+**Terminal 2 - Frontend:**
+```bash
+npm run dev
 ```
 
 ### 5. Abrir en el navegador
