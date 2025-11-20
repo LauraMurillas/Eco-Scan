@@ -5,28 +5,21 @@ const multer = require('multer');
 const cors = require('cors');
 const axios = require("axios");
 const { GoogleGenerativeAI } = require('@google/generative-ai');
+const Groq = require("groq-sdk");
 
 const app = express();
-const port = process.env.PORT || 3000;
+const port = 3000;
 
-// 1. Configuración de Middleware
-app.use(cors({
-  origin: 'http://localhost:5173', // Permitir acceso desde el frontend React
-  methods: ['GET', 'POST']
-}));
-app.use(express.json());
-
-// 2. Configuración de Multer (Almacenamiento en memoria)
+// Configuración de Multer para almacenar archivos en memoria
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
-// 3. Inicialización de Gemini
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-if (!GEMINI_API_KEY) {
-  console.error("ERROR: GEMINI_API_KEY no encontrada en variables de entorno.");
-  process.exit(1);
-}
-const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+app.use(cors());
+app.use(express.json());
+
+// Inicializar clientes de IA
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 // Constantes de Contenedores (Colombia)
 const CONTENEDORES = {
@@ -35,8 +28,8 @@ const CONTENEDORES = {
   VERDE: "Verde (Orgánicos)"
 };
 
-// Modelo para Análisis (Usamos gemini-1.5-flash como reemplazo del inexistente 2.5)
-const MODEL_NAME = "gemini-2.5-flash-image";
+// Modelo para Análisis
+const MODEL_NAME = "gemini-1.5-flash";
 
 // --- RUTAS ---
 
@@ -102,70 +95,71 @@ app.post('/api/analyze', upload.single('image'), async (req, res) => {
 
 /**
  * B. GET /api/create
- * Genera preguntas para el cuestionario.
+ * Genera UNA pregunta para el cuestionario (on-demand).
  */
-
-
 app.get("/api/create", async (req, res) => {
   try {
-    const promptData = [
-      { text: "Genera una imagen fotorrealista de una botella de plástico sucia y aplastada en fondo blanco.", container: CONTENEDORES.BLANCO, name: "Botella de plástico" },
-      { text: "Genera una imagen fotorrealista de una cáscara de banano en fondo blanco.", container: CONTENEDORES.VERDE, name: "Cáscara de banano" },
-      { text: "Genera una imagen fotorrealista de una lata de aluminio en fondo blanco.", container: CONTENEDORES.BLANCO, name: "Lata de aluminio" }
-    ];
+    // 1. Generar datos del quiz con Groq (solo 1 item)
+    const groqPrompt = `Genera 1 objeto de basura común en Colombia para un quiz de reciclaje.
+    Proporciona:
+    - name: Nombre del objeto.
+    - container: El contenedor correcto (Blanco, Negro, Verde) según la norma colombiana.
+    - justification: Breve explicación de por qué va en ese contenedor.
+    - imagePrompt: Un prompt detallado para generar una imagen fotorrealista de este objeto en fondo blanco, aislado.
 
-    const API_KEY = process.env.GEMINI_API_KEY;
-    const MODEL = "gemini-2.5-flash-image";
+    Responde ÚNICAMENTE con un objeto JSON válido (NO un array). Ejemplo:
+    { "name": "Botella PET", "container": "Blanco (Aprovechables)", "justification": "Es plástico limpio.", "imagePrompt": "Una botella de plástico transparente vacía y aplastada, fondo blanco studio lighting" }`;
 
-    // ---- 1) Llamada al API REST que SÍ genera imágenes ----
-    // Enviamos los prompts. Nota: La estructura exacta de cómo el modelo interpreta múltiples 'contents' 
-    // para generar múltiples imágenes independientes puede variar. 
-    // Asumimos que el usuario verificó que esto genera imágenes.
-    const response = await axios.post(
-      `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${API_KEY}`,
-      {
-        contents: promptData.map(p => ({ parts: [{ text: p.text }] }))
+    const chatCompletion = await groq.chat.completions.create({
+      messages: [{ role: "user", content: groqPrompt }],
+      model: "openai/gpt-oss-20b",
+      temperature: 0.7,
+    });
+
+    const groqResponse = chatCompletion.choices[0]?.message?.content || "{}";
+    console.log("Respuesta de groq: ", groqResponse);
+
+    // Intentar limpiar la respuesta si tiene markdown
+    const jsonMatch = groqResponse.match(/\{[\s\S]*\}/);
+    let itemData = null;
+
+    if (jsonMatch) {
+      try {
+        itemData = JSON.parse(jsonMatch[0]);
+      } catch (e) {
+        console.error("Error parseando JSON de Groq:", e);
       }
-    );
-
-    const parts = response.data.candidates?.flatMap(c => c.content.parts) || [];
-
-    // ---- 2) Extraer imágenes y asociar datos correctos ----
-    const images = parts
-      .filter(p => p.inlineData)
-      .map((p, index) => ({
-        imageUrl: `data:image/png;base64,${p.inlineData.data}`,
-        // Usamos el índice para correlacionar con el prompt original
-        // Si el modelo devuelve más o menos imágenes, esto podría desalinearse, 
-        // pero es la mejor aproximación con la lógica actual.
-        wasteName: promptData[index]?.name || `Imagen ${index + 1}`,
-        correctContainer: promptData[index]?.container || CONTENEDORES.BLANCO
-      }));
-
-    if (images.length === 0) {
-      // Fallback si no se generan imágenes (para evitar romper el frontend)
-      console.warn("Gemini no devolvió imágenes, usando fallback.");
-      return res.json([
-        { imageUrl: "https://placehold.co/400x400/png?text=Botella", correctContainer: CONTENEDORES.BLANCO, wasteName: "Botella (Fallback)" },
-        { imageUrl: "https://placehold.co/400x400/png?text=Banano", correctContainer: CONTENEDORES.VERDE, wasteName: "Banano (Fallback)" },
-        { imageUrl: "https://placehold.co/400x400/png?text=Lata", correctContainer: CONTENEDORES.BLANCO, wasteName: "Lata (Fallback)" }
-      ]);
     }
 
-    // Enviamos las imágenes al frontend
-    res.json(images);
+    // Fallback si Groq falla o devuelve datos inválidos
+    if (!itemData || !itemData.name) {
+      const fallbacks = [
+        { imagePrompt: "realistic photo of a crushed plastic bottle on white background", container: CONTENEDORES.BLANCO, name: "Botella de plástico", justification: "Es material reciclable." },
+        { imagePrompt: "realistic photo of a banana peel on white background", container: CONTENEDORES.VERDE, name: "Cáscara de banano", justification: "Es residuo orgánico." },
+        { imagePrompt: "realistic photo of an aluminum can on white background", container: CONTENEDORES.BLANCO, name: "Lata de aluminio", justification: "Es metal reciclable." }
+      ];
+      itemData = fallbacks[Math.floor(Math.random() * fallbacks.length)];
+    }
+
+    // ---- 2) Generar Imagen con Pollinations.ai ----
+    // Usamos Pollinations.ai directamente (Gemini no tiene modelo de generación de imágenes)
+    const questionData = {
+      imageUrl: `https://image.pollinations.ai/prompt/${encodeURIComponent(itemData.imagePrompt)}?width=400&height=400&nologo=true`,
+      wasteName: itemData.name,
+      correctContainer: itemData.container,
+      justification: itemData.justification
+    };
+
+    console.log("✅ Pregunta generada:", questionData.wasteName);
+    res.json(questionData);
 
   } catch (error) {
-    console.error("❌ Error generando imágenes:", error.response?.data || error.message);
-    // Fallback en caso de error de API
-    res.json([
-      { imageUrl: "https://placehold.co/400x400/png?text=Error+API", correctContainer: CONTENEDORES.BLANCO, wasteName: "Error (Fallback)" },
-      { imageUrl: "https://placehold.co/400x400/png?text=Error+API", correctContainer: CONTENEDORES.VERDE, wasteName: "Error (Fallback)" },
-      { imageUrl: "https://placehold.co/400x400/png?text=Error+API", correctContainer: CONTENEDORES.BLANCO, wasteName: "Error (Fallback)" }
-    ]);
+    console.error("❌ Error global en /api/create:", error);
+    res.status(500).json({ error: "Error generando quiz" });
   }
 });
 
 app.listen(port, () => {
   console.log(`Servidor corriendo en http://localhost:${port}`);
+  console.log(`Usando modelo: ${MODEL_NAME}`);
 });
