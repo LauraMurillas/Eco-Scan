@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './App.css';
 import QuizModal from './QuizModal';
 
@@ -11,6 +11,7 @@ function App() {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
     const [isQuizOpen, setIsQuizOpen] = useState(false);
+    const [ecoTip, setEcoTip] = useState('Cargando consejo...');
 
     const handleFileChange = (event) => {
         const file = event.target.files[0];
@@ -55,6 +56,21 @@ function App() {
         }
     };
 
+    // Fetch eco tip on component mount
+    useEffect(() => {
+        const fetchTip = async () => {
+            try {
+                const response = await fetch(`${BASE_URL}/tips`);
+                const data = await response.json();
+                setEcoTip(data.tip);
+            } catch (err) {
+                console.error('Error fetching tip:', err);
+                setEcoTip('Recuerda separar tus residuos para facilitar el reciclaje.');
+            }
+        };
+        fetchTip();
+    }, []);
+
     return (
         <div className="app-container">
             <header className="app-header">
@@ -94,6 +110,11 @@ function App() {
                 {error && <p style={{ color: 'red' }}>{error}</p>}
             </div>
 
+            <div className="eco-tip-section">
+                <div className="tip-icon">💡</div>
+                <p className="tip-text">{ecoTip}</p>
+            </div>
+
             {classificationResult && (
                 <div className="result-section">
                     <h2>Resultado:</h2>
@@ -104,20 +125,19 @@ function App() {
                 </div>
             )}
 
-            <div className="quiz-trigger">
-                <p className='app-subtitle' style={{ marginBottom: "16px" }}>
-                    ¿Quieres poner a prueba tus conocimientos?
-                </p>
-
-                <button onClick={() => setIsQuizOpen(true)}>
-                    Jugar Quiz de Reciclaje
-                </button>
-            </div>
-
             <QuizModal
                 isOpen={isQuizOpen}
                 onClose={() => setIsQuizOpen(false)}
             />
+
+            {/* Floating Quiz Button */}
+            <button
+                className="floating-quiz-btn"
+                onClick={() => setIsQuizOpen(true)}
+                title="Jugar Quiz de Reciclaje"
+            >
+                🎮 Eco-Quiz
+            </button>
         </div>
     );
 }

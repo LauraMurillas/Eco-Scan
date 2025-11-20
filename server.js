@@ -141,10 +141,30 @@ app.get("/api/create", async (req, res) => {
       itemData = fallbacks[Math.floor(Math.random() * fallbacks.length)];
     }
 
-    // ---- 2) Generar Imagen con Pollinations.ai ----
-    // Usamos Pollinations.ai directamente (Gemini no tiene modelo de generación de imágenes)
+    // ---- 2. Generar imagen con Gemini ----
+    console.log("🖼️ Generando imagen con Gemini...");
+
+    // Instanciar el modelo correcto
+    const imageModel = genAI.getGenerativeModel({ model: "gemini-2.5-flash-image" });
+
+    const imageResponse = await imageModel.generateContent([
+      { text: itemData.imagePrompt }
+    ]);
+
+    // Extraer partes con imagen
+    const parts = imageResponse.response.candidates[0].content.parts;
+    const imageParts = parts.filter(p => p.inlineData);
+
+    if (!imageParts.length) {
+      throw new Error("Gemini no devolvió datos de imagen");
+    }
+
+    const base64Image = imageParts[0].inlineData.data;
+
+    const finalUrl = `data:image/png;base64,${base64Image}`;
+
     const questionData = {
-      imageUrl: `https://image.pollinations.ai/prompt/${encodeURIComponent(itemData.imagePrompt)}?width=400&height=400&nologo=true`,
+      imageUrl: finalUrl,
       wasteName: itemData.name,
       correctContainer: itemData.container,
       justification: itemData.justification
@@ -156,6 +176,47 @@ app.get("/api/create", async (req, res) => {
   } catch (error) {
     console.error("❌ Error global en /api/create:", error);
     res.status(500).json({ error: "Error generando quiz" });
+  }
+});
+
+/**
+ * C. GET /api/tips
+ * Genera un consejo aleatorio sobre reciclaje y medio ambiente.
+ */
+app.get("/api/tips", async (req, res) => {
+  try {
+    const groqPrompt = `Genera un consejo breve y práctico sobre reciclaje, medio ambiente o cómo ayudar al planeta desde pequeñas acciones cotidianas.
+    El consejo debe ser:
+    - Corto (máximo 2-3 oraciones)
+    - Práctico y fácil de implementar
+    - Motivador y positivo
+    - Relacionado con Colombia cuando sea posible
+    
+    Responde ÚNICAMENTE con el texto del consejo, sin formato adicional ni comillas.`;
+
+    const chatCompletion = await groq.chat.completions.create({
+      messages: [{ role: "user", content: groqPrompt }],
+      model: "openai/gpt-oss-20b",
+      temperature: 0.8,
+    });
+
+    const tip = chatCompletion.choices[0]?.message?.content || "Recuerda separar tus residuos correctamente para facilitar el reciclaje.";
+    console.log("✅ Consejo generado:", tip);
+
+    res.json({ tip: tip.trim() });
+
+  } catch (error) {
+    console.error("❌ Error en /api/tips:", error);
+    // Fallback tips
+    const fallbackTips = [
+      "Lleva tu propia bolsa reutilizable al supermercado y reduce el uso de plástico.",
+      "Separa tus residuos en casa: aprovechables, orgánicos y no aprovechables.",
+      "Reutiliza frascos de vidrio para almacenar alimentos en lugar de comprar nuevos contenedores.",
+      "Apaga las luces cuando salgas de una habitación y ahorra energía.",
+      "Usa una botella reutilizable en lugar de comprar botellas de plástico desechables."
+    ];
+    const randomTip = fallbackTips[Math.floor(Math.random() * fallbackTips.length)];
+    res.json({ tip: randomTip });
   }
 });
 
