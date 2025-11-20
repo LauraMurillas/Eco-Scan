@@ -78,11 +78,6 @@ function App() {
                 <p className="app-subtitle">Clasificador de Basura</p>
             </header>
 
-            <div className="eco-tip-section">
-                <div className="tip-icon">💡</div>
-                <p className="tip-text">{ecoTip}</p>
-            </div>
-
             <div className="upload-section">
                 <label htmlFor="file-upload" className="file-upload-label">
                     <div className="upload-icon">📁</div>
@@ -115,6 +110,11 @@ function App() {
                 {error && <p style={{ color: 'red' }}>{error}</p>}
             </div>
 
+            <div className="eco-tip-section">
+                <div className="tip-icon">💡</div>
+                <p className="tip-text">{ecoTip}</p>
+            </div>
+
             {classificationResult && (
                 <div className="result-section">
                     <h2>Resultado:</h2>
@@ -125,20 +125,19 @@ function App() {
                 </div>
             )}
 
-            <div className="quiz-trigger">
-                <p className='app-subtitle' style={{ marginBottom: "16px" }}>
-                    ¿Quieres poner a prueba tus conocimientos?
-                </p>
-
-                <button onClick={() => setIsQuizOpen(true)}>
-                    Jugar Quiz de Reciclaje
-                </button>
-            </div>
-
             <QuizModal
                 isOpen={isQuizOpen}
                 onClose={() => setIsQuizOpen(false)}
             />
+
+            {/* Floating Quiz Button */}
+            <button
+                className="floating-quiz-btn"
+                onClick={() => setIsQuizOpen(true)}
+                title="Jugar Quiz de Reciclaje"
+            >
+                🎮 Eco-Quiz
+            </button>
         </div>
     );
 }
