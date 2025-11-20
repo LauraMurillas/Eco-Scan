@@ -1,0 +1,6 @@
+body { font-family: Arial, sans-serif; max-width: 720px; margin: 24px auto; padding: 0 16px; }
+h1 { text-align:center }
+.card { border: 1px solid #ddd; padding: 16px; border-radius: 8px; margin-bottom: 12px; }
+.result { white-space: pre-wrap; }
+.preview { max-width: 100%; height: auto; display:block; margin: 12px 0 }
+button { padding: 8px 14px; font-size: 16px }

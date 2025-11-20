@@ -39,34 +39,36 @@ app.post('/api/analyze', upload.single('image'), async (req, res) => {
     const buffer = req.file.buffer;
     const base64 = buffer.toString('base64');
 
-    const GEMINI_API_URL = process.env.GEMINI_API_URL || '';
     const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
 
-    if (!GEMINI_API_URL || !GEMINI_API_KEY) {
-      return res.status(500).json({ error: 'GEMINI_API_URL o GEMINI_API_KEY no configurados en .env' });
+    if (!GEMINI_API_KEY) {
+      return res.status(500).json({ error: 'GEMINI_API_KEY no configurado en .env' });
     }
 
     // Build prompt: ask Gemini to describe image and detect any waste item
     const prompt = `Eres un asistente que analiza imágenes y detecta basura o desechos. Describe brevemente lo que aparece en la imagen y, si identificas desechos, clasifícalos en una de estas categorías EXACTAS: \n1) Residuos Aprovechables (incluye plástico, vidrio, metales, papel y cartón)\n2) Residuos Organicos Aprovechables (incluye restos de comida y desechos agrícolas)\n3) Residuos NO Aprovechables (incluye papel higiénico; servilletas, papeles y cartones contaminados con comida; papeles metalizados)\nDevuelve la respuesta en texto simple en español con: 1) descripción breve, 2) la categoría encontrada (si aplica) y 3) una o dos etiquetas (palabras) identificadas.`;
 
-    // NOTE: the exact Gemini Image API HTTP format may vary. Here we send a JSON body with model and image content.
-    // Adjust GEMINI_API_URL to the correct Google Generative API endpoint for 'gemini-2.5-flash' Image.
+    // URL for Gemini 1.5 Flash
+    const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
 
     const body = {
-      model: 'gemini-2.5-flash',
-      // This key name may need to be adapted depending on the exact Gemini image endpoint.
-      // We include the image as base64 and a text prompt for image understanding.
-      image: {
-        content: base64
-      },
-      prompt: prompt
+      contents: [{
+        parts: [
+          { text: prompt },
+          {
+            inline_data: {
+              mime_type: "image/jpeg",
+              data: base64
+            }
+          }
+        ]
+      }]
     };
 
     const response = await fetch(GEMINI_API_URL, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${GEMINI_API_KEY}`
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify(body)
     });
@@ -78,12 +80,13 @@ app.post('/api/analyze', upload.single('image'), async (req, res) => {
 
     const data = await response.json();
 
-    // The response shape can vary. We try common fields then fallback.
+    // The response shape for Gemini 1.5 Flash
     let aiText = '';
-    if (data.output && typeof data.output === 'string') aiText = data.output;
-    else if (data.output && Array.isArray(data.output) && data.output.length > 0) aiText = data.output[0].content || JSON.stringify(data.output[0]);
-    else if (data.result && typeof data.result === 'string') aiText = data.result;
-    else aiText = JSON.stringify(data);
+    if (data.candidates && data.candidates.length > 0 && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts.length > 0) {
+      aiText = data.candidates[0].content.parts[0].text;
+    } else {
+      aiText = JSON.stringify(data);
+    }
 
     const classification = classifyText(aiText);
 
