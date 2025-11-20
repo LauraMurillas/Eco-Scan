@@ -13,6 +13,30 @@
     gap: 2rem;
 }
 
+.app-header {
+    text-align: center;
+    margin-bottom: 1rem;
+}
+
+.app-title {
+    font-size: 4rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, #646cff 0%, #535bf2 50%, #4338ca 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin: 0;
+    letter-spacing: -0.02em;
+}
+
+.app-subtitle {
+    font-size: 1.3rem;
+    font-weight: 400;
+    color: #666;
+    margin: 0.5rem 0 0 0;
+    letter-spacing: 0.05em;
+}
+
 .upload-section {
     width: 100%;
     max-width: 500px;
