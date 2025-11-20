@@ -7,7 +7,8 @@
     "vite": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "server": "node server.js"
+    "server": "node server.js",
+    "start": "concurrently \"npm run server\" \"npm run dev\" --names \"BACKEND,FRONTEND\" --prefix-colors \"bgBlue.bold,bgMagenta.bold\""
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
@@ -23,6 +24,7 @@
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.2.1",
+    "concurrently": "^9.2.1",
     "vite": "^5.0.12"
   }
 }
