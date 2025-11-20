@@ -57,13 +57,27 @@ function App() {
 
     return (
         <div className="app-container">
-            <h1>Eco-Scan: Clasificador de Basura</h1>
+            <header className="app-header">
+                <h1 className="app-title">EcoScan</h1>
+                <p className="app-subtitle">Clasificador de Basura</p>
+            </header>
 
             <div className="upload-section">
+                <label htmlFor="file-upload" className="file-upload-label">
+                    <div className="upload-icon">📁</div>
+                    <p className="upload-text">
+                        {selectedFile ? selectedFile.name : 'Selecciona una imagen'}
+                    </p>
+                    <p className="upload-subtext">
+                        o arrastra y suelta aquí
+                    </p>
+                </label>
                 <input
+                    id="file-upload"
                     type="file"
                     accept="image/*"
                     onChange={handleFileChange}
+                    className="file-input-hidden"
                 />
 
                 {previewUrl && (
@@ -91,7 +105,10 @@ function App() {
             )}
 
             <div className="quiz-trigger">
-                <p>¿Quieres poner a prueba tus conocimientos?</p>
+                <p className='app-subtitle' style={{ marginBottom: "16px" }}>
+                    ¿Quieres poner a prueba tus conocimientos?
+                </p>
+
                 <button onClick={() => setIsQuizOpen(true)}>
                     Jugar Quiz de Reciclaje
                 </button>
