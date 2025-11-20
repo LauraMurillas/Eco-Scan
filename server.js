@@ -29,7 +29,7 @@ const CONTENEDORES = {
 };
 
 // Modelo para Análisis
-const MODEL_NAME = "gemini-1.5-flash";
+const MODEL_NAME = "gemini-2.5-flash-image";
 
 // --- RUTAS ---
 

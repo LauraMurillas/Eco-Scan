@@ -60,10 +60,21 @@ function App() {
             <h1>Eco-Scan: Clasificador de Basura</h1>
 
             <div className="upload-section">
+                <label htmlFor="file-upload" className="file-upload-label">
+                    <div className="upload-icon">📁</div>
+                    <p className="upload-text">
+                        {selectedFile ? selectedFile.name : 'Selecciona una imagen'}
+                    </p>
+                    <p className="upload-subtext">
+                        o arrastra y suelta aquí
+                    </p>
+                </label>
                 <input
+                    id="file-upload"
                     type="file"
                     accept="image/*"
                     onChange={handleFileChange}
+                    className="file-input-hidden"
                 />
 
                 {previewUrl && (
