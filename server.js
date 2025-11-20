@@ -141,10 +141,30 @@ app.get("/api/create", async (req, res) => {
       itemData = fallbacks[Math.floor(Math.random() * fallbacks.length)];
     }
 
-    // ---- 2) Generar Imagen con Pollinations.ai ----
-    // Usamos Pollinations.ai directamente (Gemini no tiene modelo de generación de imágenes)
+    // ---- 2. Generar imagen con Gemini ----
+    console.log("🖼️ Generando imagen con Gemini...");
+
+    // Instanciar el modelo correcto
+    const imageModel = genAI.getGenerativeModel({ model: "gemini-2.5-flash-image" });
+
+    const imageResponse = await imageModel.generateContent([
+      { text: itemData.imagePrompt }
+    ]);
+
+    // Extraer partes con imagen
+    const parts = imageResponse.response.candidates[0].content.parts;
+    const imageParts = parts.filter(p => p.inlineData);
+
+    if (!imageParts.length) {
+      throw new Error("Gemini no devolvió datos de imagen");
+    }
+
+    const base64Image = imageParts[0].inlineData.data;
+
+    const finalUrl = `data:image/png;base64,${base64Image}`;
+
     const questionData = {
-      imageUrl: `https://image.pollinations.ai/prompt/${encodeURIComponent(itemData.imagePrompt)}?width=400&height=400&nologo=true`,
+      imageUrl: finalUrl,
       wasteName: itemData.name,
       correctContainer: itemData.container,
       justification: itemData.justification
