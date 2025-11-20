@@ -83,8 +83,10 @@ function App() {
             {classificationResult && (
                 <div className="result-section">
                     <h2>Resultado:</h2>
-                    <p><strong>Descripción:</strong> {classificationResult.description}</p>
-                    <p><strong>Categoría:</strong> {classificationResult.classification}</p>
+                    <p><strong>Objeto:</strong> {classificationResult.details?.objectName}</p>
+                    <p><strong>Contenedor:</strong> {classificationResult.container}</p>
+                    <p><strong>Razón:</strong> {classificationResult.details?.reason}</p>
+                    <p><strong>Confianza:</strong> {classificationResult.details?.confidence}</p>
                 </div>
             )}
 

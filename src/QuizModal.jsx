@@ -65,7 +65,10 @@ const QuizModal = ({ isOpen, onClose }) => {
 
         setSelectedOption(option);
         const currentQuestion = questions[currentIndex];
-        const correct = option === currentQuestion.correctContainer;
+
+        // Backend returns e.g. "Blanco (Aprovechables)", option is "Blanco"
+        // Check if the backend string starts with the option
+        const correct = currentQuestion.correctContainer.startsWith(option);
 
         setIsCorrect(correct);
         if (correct) {
@@ -86,7 +89,7 @@ const QuizModal = ({ isOpen, onClose }) => {
 
     if (!isOpen) return null;
 
-    const options = ['Azul', 'Amarillo', 'Verde', 'Gris'];
+    const options = ['Blanco', 'Negro', 'Verde'];
 
     return (
         <div className="modal-overlay">
@@ -116,8 +119,8 @@ const QuizModal = ({ isOpen, onClose }) => {
                                 <button
                                     key={option}
                                     className={`option-btn ${selectedOption === option
-                                            ? (isCorrect ? 'correct' : 'incorrect')
-                                            : ''
+                                        ? (isCorrect ? 'correct' : 'incorrect')
+                                        : ''
                                         }`}
                                     onClick={() => handleOptionClick(option)}
                                     disabled={selectedOption !== null}
