@@ -8,6 +8,7 @@ const QuizModal = ({ isOpen, onClose }) => {
     const [score, setScore] = useState(0);
     const [questionCount, setQuestionCount] = useState(0);
     const [loading, setLoading] = useState(false);
+    const [imageLoaded, setImageLoaded] = useState(false);
     const [error, setError] = useState(null);
     const [selectedOption, setSelectedOption] = useState(null);
     const [isCorrect, setIsCorrect] = useState(null);
@@ -16,6 +17,7 @@ const QuizModal = ({ isOpen, onClose }) => {
 
     const fetchQuestion = useCallback(async () => {
         setLoading(true);
+        setImageLoaded(false);
         setError(null);
         setSelectedOption(null);
         setIsCorrect(null);
@@ -29,6 +31,7 @@ const QuizModal = ({ isOpen, onClose }) => {
             const data = await response.json();
             setCurrentQuestion(data);
             setQuestionCount(prev => prev + 1);
+            // Note: loading will be set to false when image loads (onLoad event)
         } catch (err) {
             console.error(err);
             setError('No se pudo conectar con el servidor.');
@@ -39,7 +42,6 @@ const QuizModal = ({ isOpen, onClose }) => {
                 wasteName: 'Item de prueba',
                 justification: 'Modo demo'
             });
-        } finally {
             setLoading(false);
         }
     }, []);
@@ -83,6 +85,11 @@ const QuizModal = ({ isOpen, onClose }) => {
         }
     };
 
+    const handleImageLoad = () => {
+        setImageLoaded(true);
+        setLoading(false);
+    };
+
     const handleFinish = () => {
         setQuizFinished(true);
     };
@@ -98,10 +105,16 @@ const QuizModal = ({ isOpen, onClose }) => {
 
                 <h2>Mini Quiz de Reciclaje</h2>
 
-                {loading && <p>Cargando pregunta...</p>}
+                {loading && (
+                    <div className="loading-container">
+                        <div className="spinner"></div>
+                        <p className="loading-text">Generando pregunta...</p>
+                        <p className="loading-subtext">Por favor espera un momento</p>
+                    </div>
+                )}
 
-                {!loading && !quizFinished && currentQuestion && (
-                    <div className="quiz-container">
+                {!quizFinished && currentQuestion && (
+                    <div className="quiz-container" style={{ display: loading ? 'none' : 'block' }}>
                         <div className="progress">
                             Pregunta {questionCount} | Puntuación: {score}
                         </div>
@@ -110,6 +123,7 @@ const QuizModal = ({ isOpen, onClose }) => {
                             src={currentQuestion.imageUrl}
                             alt="Residuo a clasificar"
                             className="quiz-image"
+                            onLoad={handleImageLoad}
                         />
 
                         <p><strong>{currentQuestion.wasteName}</strong></p>
