@@ -1,81 +1,106 @@
-import { useState } from 'react'
+import React, { useState } from 'react';
+import './App.css';
+import QuizModal from './QuizModal';
+
+const BASE_URL = 'http://localhost:3000/api';
 
 function App() {
-    const [file, setFile] = useState(null)
-    const [preview, setPreview] = useState(null)
-    const [description, setDescription] = useState('')
-    const [classification, setClassification] = useState('')
-    const [analyzing, setAnalyzing] = useState(false)
+    const [selectedFile, setSelectedFile] = useState(null);
+    const [previewUrl, setPreviewUrl] = useState(null);
+    const [classificationResult, setClassificationResult] = useState(null);
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState(null);
+    const [isQuizOpen, setIsQuizOpen] = useState(false);
 
-    const handleFileChange = (e) => {
-        const f = e.target.files[0]
-        if (!f) return
-        setFile(f)
-        setPreview(URL.createObjectURL(f))
-        // Reset results when new file is selected
-        setDescription('')
-        setClassification('')
-    }
+    const handleFileChange = (event) => {
+        const file = event.target.files[0];
+        if (file) {
+            setSelectedFile(file);
+            setPreviewUrl(URL.createObjectURL(file));
+            setClassificationResult(null);
+            setError(null);
+        }
+    };
 
-    const handleAnalyze = async () => {
-        if (!file) return alert('Selecciona una imagen primero.')
+    const handleClassify = async () => {
+        if (!selectedFile) {
+            setError('Por favor, selecciona una imagen primero.');
+            return;
+        }
 
-        setAnalyzing(true)
-        const form = new FormData()
-        form.append('image', file)
+        setIsLoading(true);
+        setError(null);
+        setClassificationResult(null);
+
+        const formData = new FormData();
+        formData.append('image', selectedFile);
 
         try {
-            const res = await fetch('/api/analyze', {
+            const response = await fetch(`${BASE_URL}/analyze`, {
                 method: 'POST',
-                body: form
-            })
+                body: formData,
+            });
 
-            const json = await res.json()
-            if (!res.ok) {
-                alert('Error: ' + (json.error || JSON.stringify(json)))
-                return
+            if (!response.ok) {
+                throw new Error('Error en la clasificación');
             }
 
-            setDescription(json.description || 'Sin descripción')
-            setClassification(json.classification || 'Sin clasificación')
+            const data = await response.json();
+            setClassificationResult(data);
         } catch (err) {
-            alert('Error de red o servidor: ' + err.message)
+            console.error(err);
+            setError('Ocurrió un error al clasificar la imagen. Inténtalo de nuevo.');
         } finally {
-            setAnalyzing(false)
+            setIsLoading(false);
         }
-    }
+    };
 
     return (
-        <div>
-            <h1>Reconocimiento de Residuos (Gemini 2.5 Flash Image)</h1>
+        <div className="app-container">
+            <h1>Eco-Scan: Clasificador de Basura</h1>
 
-            <div className="card">
-                <label htmlFor="image">Sube una imagen (desde tu ordenador):</label>
-                <input id="image" type="file" accept="image/*" onChange={handleFileChange} />
-                <div>
-                    <button id="send" onClick={handleAnalyze} disabled={analyzing}>
-                        {analyzing ? 'Analizando...' : 'Analizar imagen'}
-                    </button>
-                </div>
+            <div className="upload-section">
+                <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                />
+
+                {previewUrl && (
+                    <img src={previewUrl} alt="Vista previa" className="preview-image" />
+                )}
+
+                <button
+                    onClick={handleClassify}
+                    disabled={!selectedFile || isLoading}
+                >
+                    {isLoading ? 'Clasificando...' : 'Clasificar Basura'}
+                </button>
+
+                {error && <p style={{ color: 'red' }}>{error}</p>}
             </div>
 
-            {preview && (
-                <div className="card" id="previewCard">
-                    <strong>Previsualización:</strong>
-                    <img id="preview" className="preview" src={preview} alt="preview" />
+            {classificationResult && (
+                <div className="result-section">
+                    <h2>Resultado:</h2>
+                    <p><strong>Descripción:</strong> {classificationResult.description}</p>
+                    <p><strong>Categoría:</strong> {classificationResult.classification}</p>
                 </div>
             )}
 
-            {(description || classification) && (
-                <div className="card" id="outputCard">
-                    <strong>Descripción (desde Gemini):</strong>
-                    <div className="result" id="description">{description}</div>
-                    <strong>Clasificación (heurística):</strong>
-                    <div id="classification">{classification}</div>
-                </div>
-            )}
+            <div className="quiz-trigger">
+                <p>¿Quieres poner a prueba tus conocimientos?</p>
+                <button onClick={() => setIsQuizOpen(true)}>
+                    Jugar Quiz de Reciclaje
+                </button>
+            </div>
+
+            <QuizModal
+                isOpen={isQuizOpen}
+                onClose={() => setIsQuizOpen(false)}
+            />
         </div>
-    )
+    );
 }
 
-export default App
+export default App;
