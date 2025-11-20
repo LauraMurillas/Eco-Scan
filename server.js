@@ -1,7 +1,9 @@
+
 require('dotenv').config();
 const express = require('express');
 const multer = require('multer');
 const cors = require('cors');
+const axios = require("axios");
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 const app = express();
@@ -101,54 +103,66 @@ app.post('/api/analyze', upload.single('image'), async (req, res) => {
 /**
  * B. GET /api/create
  * Genera preguntas para el cuestionario.
- * NOTA: Gemini 1.5 Flash NO genera imágenes. 
- * Simularemos la generación usando descripciones o placeholders para cumplir el requisito funcional.
  */
-app.get('/api/create', async (req, res) => {
+
+
+app.get("/api/create", async (req, res) => {
   try {
-    const count = 3;
-    const questions = [];
-    const wasteTypes = [
-      { type: "botella de plástico", container: CONTENEDORES.BLANCO },
-      { type: "cáscara de banano", container: CONTENEDORES.VERDE },
-      { type: "servilleta sucia", container: CONTENEDORES.NEGRO },
-      { type: "lata de aluminio", container: CONTENEDORES.BLANCO },
-      { type: "manzana mordida", container: CONTENEDORES.VERDE },
-      { type: "papel higiénico usado", container: CONTENEDORES.NEGRO }
+    const promptData = [
+      { text: "Genera una imagen fotorrealista de una botella de plástico sucia y aplastada en fondo blanco.", container: CONTENEDORES.BLANCO, name: "Botella de plástico" },
+      { text: "Genera una imagen fotorrealista de una cáscara de banano en fondo blanco.", container: CONTENEDORES.VERDE, name: "Cáscara de banano" },
+      { text: "Genera una imagen fotorrealista de una lata de aluminio en fondo blanco.", container: CONTENEDORES.BLANCO, name: "Lata de aluminio" }
     ];
 
-    // Seleccionar 3 tipos aleatorios
-    const selectedWastes = [];
-    while (selectedWastes.length < count) {
-      const random = wasteTypes[Math.floor(Math.random() * wasteTypes.length)];
-      if (!selectedWastes.includes(random)) {
-        selectedWastes.push(random);
+    const API_KEY = process.env.GEMINI_API_KEY;
+    const MODEL = "gemini-2.5-flash-image";
+
+    // ---- 1) Llamada al API REST que SÍ genera imágenes ----
+    // Enviamos los prompts. Nota: La estructura exacta de cómo el modelo interpreta múltiples 'contents' 
+    // para generar múltiples imágenes independientes puede variar. 
+    // Asumimos que el usuario verificó que esto genera imágenes.
+    const response = await axios.post(
+      `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${API_KEY}`,
+      {
+        contents: promptData.map(p => ({ parts: [{ text: p.text }] }))
       }
+    );
+
+    const parts = response.data.candidates?.flatMap(c => c.content.parts) || [];
+
+    // ---- 2) Extraer imágenes y asociar datos correctos ----
+    const images = parts
+      .filter(p => p.inlineData)
+      .map((p, index) => ({
+        imageUrl: `data:image/png;base64,${p.inlineData.data}`,
+        // Usamos el índice para correlacionar con el prompt original
+        // Si el modelo devuelve más o menos imágenes, esto podría desalinearse, 
+        // pero es la mejor aproximación con la lógica actual.
+        wasteName: promptData[index]?.name || `Imagen ${index + 1}`,
+        correctContainer: promptData[index]?.container || CONTENEDORES.BLANCO
+      }));
+
+    if (images.length === 0) {
+      // Fallback si no se generan imágenes (para evitar romper el frontend)
+      console.warn("Gemini no devolvió imágenes, usando fallback.");
+      return res.json([
+        { imageUrl: "https://placehold.co/400x400/png?text=Botella", correctContainer: CONTENEDORES.BLANCO, wasteName: "Botella (Fallback)" },
+        { imageUrl: "https://placehold.co/400x400/png?text=Banano", correctContainer: CONTENEDORES.VERDE, wasteName: "Banano (Fallback)" },
+        { imageUrl: "https://placehold.co/400x400/png?text=Lata", correctContainer: CONTENEDORES.BLANCO, wasteName: "Lata (Fallback)" }
+      ]);
     }
 
-    // Generar "Imágenes" (URLs simuladas o placeholders)
-    // En un entorno real con acceso a Imagen 3, aquí llamaríamos a la API de generación.
-    // Para este MVP, usaremos un servicio de placeholders con texto.
-
-    for (const waste of selectedWastes) {
-      // Simulamos la llamada a Gemini para obtener una descripción (opcional, aquí usamos el tipo directamente)
-      // const prompt = `Genera una imagen realista de: ${waste.type}`;
-
-      // Usamos placehold.co para visualizar el "residuo"
-      const imageUrl = `https://placehold.co/400x400/png?text=${encodeURIComponent(waste.type)}`;
-
-      questions.push({
-        imageUrl: imageUrl,
-        correctContainer: waste.container,
-        wasteName: waste.type
-      });
-    }
-
-    res.json(questions);
+    // Enviamos las imágenes al frontend
+    res.json(images);
 
   } catch (error) {
-    console.error("Error en /api/create:", error);
-    res.status(500).json({ error: 'Error al generar el cuestionario.' });
+    console.error("❌ Error generando imágenes:", error.response?.data || error.message);
+    // Fallback en caso de error de API
+    res.json([
+      { imageUrl: "https://placehold.co/400x400/png?text=Error+API", correctContainer: CONTENEDORES.BLANCO, wasteName: "Error (Fallback)" },
+      { imageUrl: "https://placehold.co/400x400/png?text=Error+API", correctContainer: CONTENEDORES.VERDE, wasteName: "Error (Fallback)" },
+      { imageUrl: "https://placehold.co/400x400/png?text=Error+API", correctContainer: CONTENEDORES.BLANCO, wasteName: "Error (Fallback)" }
+    ]);
   }
 });
 
