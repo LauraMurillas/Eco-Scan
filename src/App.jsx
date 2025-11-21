@@ -78,6 +78,11 @@ function App() {
                 <p className="app-subtitle">Clasificador de Basura</p>
             </header>
 
+            <div className="eco-tip-section">
+                <div className="tip-icon">💡</div>
+                <p className="tip-text">{ecoTip}</p>
+            </div>
+
             <div className="upload-section">
                 <label htmlFor="file-upload" className="file-upload-label">
                     <div className="upload-icon">📁</div>
@@ -108,11 +113,6 @@ function App() {
                 </button>
 
                 {error && <p style={{ color: 'red' }}>{error}</p>}
-            </div>
-
-            <div className="eco-tip-section">
-                <div className="tip-icon">💡</div>
-                <p className="tip-text">{ecoTip}</p>
             </div>
 
             {classificationResult && (
