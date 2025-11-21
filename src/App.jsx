@@ -75,7 +75,7 @@ function App() {
         <div className="app-container">
             <header className="app-header">
                 <h1 className="app-title">EcoScan</h1>
-                <p className="app-subtitle">Clasificador de Basura</p>
+                <p className="app-subtitle">Clasificador de Desechos</p>
             </header>
 
             <div className="eco-tip-section">
