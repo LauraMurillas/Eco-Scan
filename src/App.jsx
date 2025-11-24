@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import './App.css';
 import QuizModal from './QuizModal';
 
-const BASE_URL = 'http://localhost:3000/api';
+const BASE_URL = '/api';
 
 function App() {
     const [selectedFile, setSelectedFile] = useState(null);

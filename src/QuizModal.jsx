@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import './QuizModal.css';
 
-const BASE_URL = 'http://localhost:3000/api';
+const BASE_URL = '/api';
 
 const QuizModal = ({ isOpen, onClose }) => {
     const [currentQuestion, setCurrentQuestion] = useState(null);
