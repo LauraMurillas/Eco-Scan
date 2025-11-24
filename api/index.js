@@ -16,8 +16,20 @@ app.use(cors());
 app.use(express.json());
 
 // Inicializar clientes de IA
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+//const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+//const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+// Inicialización perezosa de clientes para evitar errores en tiempo de carga
+function getGenAI() {
+    const key = process.env.GEMINI_API_KEY;
+    if (!key) throw new Error('GEMINI_API_KEY not set in environment');
+    return new GoogleGenerativeAI(key);
+}
+
+function getGroq() {
+    const key = process.env.GROQ_API_KEY;
+    if (!key) throw new Error('GROQ_API_KEY not set in environment');
+    return new Groq({ apiKey: key });
+}
 
 // Constantes de Contenedores (Colombia)
 const CONTENEDORES = {
@@ -62,6 +74,7 @@ app.post('/api/analyze', upload.single('image'), async (req, res) => {
             }
         }`;
 
+        const genAI = getGenAI();
         const model = genAI.getGenerativeModel({ model: MODEL_NAME });
 
         const result = await model.generateContent([
@@ -108,6 +121,7 @@ app.get("/api/create", async (req, res) => {
     Responde ÚNICAMENTE con un objeto JSON válido (NO un array). Ejemplo:
     { "name": "Botella PET", "container": "Blanco (Aprovechables)", "justification": "Es plástico limpio.", "imagePrompt": "Una botella de plástico transparente vacía y aplastada, fondo blanco studio lighting" }`;
 
+        const groq = getGroq();
         const chatCompletion = await groq.chat.completions.create({
             messages: [{ role: "user", content: groqPrompt }],
             model: "openai/gpt-oss-20b",
@@ -143,6 +157,7 @@ app.get("/api/create", async (req, res) => {
         console.log("🖼️ Generando imagen con Gemini...");
 
         // Instanciar el modelo correcto
+        const genAI = getGenAI();
         const imageModel = genAI.getGenerativeModel({ model: "gemini-2.5-flash-image" });
 
         const imageResponse = await imageModel.generateContent([
@@ -192,6 +207,7 @@ app.get("/api/tips", async (req, res) => {
     
     Responde ÚNICAMENTE con el texto del consejo, sin formato adicional ni comillas.`;
 
+        const groq = getGroq();
         const chatCompletion = await groq.chat.completions.create({
             messages: [{ role: "user", content: groqPrompt }],
             model: "openai/gpt-oss-20b",
@@ -218,5 +234,20 @@ app.get("/api/tips", async (req, res) => {
     }
 });
 
-// Exportar para Vercel Serverless
-module.exports = app;
+// Exportar para Vercel Serverless: envolver en un handler que capture errores
+module.exports = (req, res) => {
+    try {
+        return app(req, res);
+    } catch (err) {
+        console.error('Unhandled error in serverless handler:', err);
+        // Siempre responder JSON para que el cliente no falle al parsear
+        try {
+            res.status(500).json({ error: 'Internal server error' });
+        } catch (e) {
+            // en caso de que res.json falle, escribir texto plano
+            res.statusCode = 500;
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify({ error: 'Internal server error' }));
+        }
+    }
+};
