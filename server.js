@@ -8,7 +8,7 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 const Groq = require("groq-sdk");
 
 const app = express();
-const port = process.env.PORT || 3000;
+const port = 3000;
 
 // Configuración de Multer para almacenar archivos en memoria
 const storage = multer.memoryStorage();
