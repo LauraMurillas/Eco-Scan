@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import './App.css';
 import QuizModal from './QuizModal';
 
-const BASE_URL = '/api';
+const BASE_URL = import.meta.env.VITE_API_URL;
 
 function App() {
     const [selectedFile, setSelectedFile] = useState(null);
@@ -75,7 +75,7 @@ function App() {
         <div className="app-container">
             <header className="app-header">
                 <h1 className="app-title">EcoScan</h1>
-                <p className="app-subtitle">Clasificador de Basura</p>
+                <p className="app-subtitle">Clasificador de Desechos</p>
             </header>
 
             <div className="eco-tip-section">
@@ -109,7 +109,7 @@ function App() {
                     onClick={handleClassify}
                     disabled={!selectedFile || isLoading}
                 >
-                    {isLoading ? 'Clasificando...' : 'Clasificar Basura'}
+                    {isLoading ? 'Clasificando...' : 'Clasificar desecho'}
                 </button>
 
                 {error && <p style={{ color: 'red' }}>{error}</p>}
