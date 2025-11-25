@@ -4,6 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "vite",
+    "test": "vitest",
+    "test:watch": "vitest --watch",
     "vite": "vite",
     "build": "vite build",
     "preview": "vite preview",
@@ -26,6 +28,16 @@
   "devDependencies": {
     "@vitejs/plugin-react": "^4.2.1",
     "concurrently": "^9.2.1",
-    "vite": "^5.0.12"
+    "vite": "^5.0.12",
+    "vitest": "^1.3.5",
+    "@testing-library/react": "^14.0.0",
+    "@testing-library/jest-dom": "^6.0.0",
+    "jsdom": "^22.1.0"
+  }
+  ,
+  "vitest": {
+    "globals": true,
+    "environment": "jsdom",
+    "setupFiles": ["tests/setupTests.js"]
   }
 }
