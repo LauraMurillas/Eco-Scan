@@ -112,6 +112,21 @@ npm run dev
 http://localhost:5173
 ```
 
+
+## Pruebas Unitarias
+
+**Frontend:**
+
+Asegurate de tener todas las dependencias intaladas
+```bash
+npm install
+```
+Luego:
+```bash
+npm test
+```
+
+
 ## 📁 Estructura del Proyecto
 
 ```
