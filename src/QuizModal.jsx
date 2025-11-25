@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import './QuizModal.css';
 
-const BASE_URL = '/api';
+const BASE_URL = import.meta.env.VITE_API_URL;
 
 const QuizModal = ({ isOpen, onClose }) => {
     const [currentQuestion, setCurrentQuestion] = useState(null);
