@@ -173,6 +173,20 @@ Obtiene un consejo ecológico aleatorio.
 }
 ```
 
+
+### Pruebas Unitarias
+**Frontend:**
+
+Asegurate de tener todas las dependencias intaladas
+```bash
+npm install
+```
+Luego:
+```bash
+npm test
+```
+
+
 ## 🎯 Características Técnicas
 
 - **Generación on-demand**: Las preguntas del quiz se generan una por una
