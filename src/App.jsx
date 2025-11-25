@@ -109,7 +109,7 @@ function App() {
                     onClick={handleClassify}
                     disabled={!selectedFile || isLoading}
                 >
-                    {isLoading ? 'Clasificando...' : 'Clasificar Basura'}
+                    {isLoading ? 'Clasificando...' : 'Clasificar desecho'}
                 </button>
 
                 {error && <p style={{ color: 'red' }}>{error}</p>}
