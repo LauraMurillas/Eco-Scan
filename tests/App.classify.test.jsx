@@ -37,25 +37,28 @@ afterEach(() => {
 test('classify button disabled until file selected and shows result after classification', async () => {
   render(<App />);
 
-  const classifyButton = screen.getByRole('button', { name: /Clasificar Basura|Clasificar Basura/i });
+  // wait for initial async effects (tips fetch) to finish to avoid act(...) warnings
+  await screen.findByText(/Tip de prueba/i);
+
+  const classifyButton = screen.getByRole('button', { name: /Clasificar (Basura|desecho)/i });
   // button should be disabled initially
   expect(classifyButton).toBeDisabled();
 
   // create a fake file
   const file = new File(['dummy content'], 'photo.png', { type: 'image/png' });
-  const input = screen.getByLabelText(/Selecciona una imagen|Selecciona una imagen/i) || document.querySelector('#file-upload');
+  const input = screen.getByLabelText(/Selecciona una imagen/i) || document.querySelector('#file-upload');
 
   // simulate file selection
   if (input) {
     fireEvent.change(input, { target: { files: [file] } });
   }
 
-  // now button should be enabled
-  expect(classifyButton).toBeEnabled();
+  // now button should be enabled (wait for state update)
+  await waitFor(() => expect(classifyButton).toBeEnabled());
 
   // click classify and wait for result
   fireEvent.click(classifyButton);
 
-  await waitFor(() => expect(screen.getByText(/Botella de plástico/i)).toBeInTheDocument());
+  await screen.findByText(/Botella de plástico/i);
   expect(screen.getByText(/Blanco \(Aprovechables\)/i)).toBeInTheDocument();
 });

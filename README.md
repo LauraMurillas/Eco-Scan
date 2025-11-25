@@ -113,17 +113,16 @@ http://localhost:5173
 ```
 
 
-## Pruebas Unitarias
+## Pruebas Unitarias y de integración
 
-**Frontend:**
-
-Asegurate de tener todas las dependencias intaladas
+Asegurate de tener todas las dependencias instaladas
 ```bash
 npm install
 ```
+
 Luego:
 ```bash
-npm test
+npm run test:integration
 ```
 
 

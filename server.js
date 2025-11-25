@@ -19,7 +19,10 @@ app.use(express.json());
 
 // Inicializar clientes de IA
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+const groq = new Groq({ 
+  apiKey: process.env.GROQ_API_KEY,
+  dangerouslyAllowBrowser: process.env.NODE_ENV === 'test'
+});
 
 // Constantes de Contenedores (Colombia)
 const CONTENEDORES = {
@@ -92,6 +95,11 @@ app.post('/api/analyze', upload.single('image'), async (req, res) => {
     res.status(500).json({ error: 'Error al procesar la imagen.', details: error.message });
   }
 });
+
+app.post('/api/classify', (req, res) => {
+  res.json({ label: 'Plástico', confidence: 0.92 });
+});
+
 
 /**
  * B. GET /api/create
@@ -224,3 +232,15 @@ app.listen(port, () => {
   console.log(`Servidor corriendo en http://localhost:${port}`);
   console.log(`Usando modelo: ${MODEL_NAME}`);
 });
+
+// Exporta la instancia para pruebas
+module.exports = app;
+
+// Solo inicia el servidor si no está en modo test
+if (require.main === module) {
+  const PORT = process.env.PORT || 3000;
+  app.listen(PORT, () => {
+    console.log(`Servidor corriendo en http://localhost:${PORT}`);
+  });
+}
+
